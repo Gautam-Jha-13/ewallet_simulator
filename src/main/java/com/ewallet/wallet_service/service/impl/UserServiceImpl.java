@@ -64,22 +64,6 @@ public class UserServiceImpl implements UserService {
     // =============================
     // LOGIN
     // =============================
-    // @Override
-    // public AuthResponse login(LoginRequest request) {
-
-    //     User user = userRepository.findByEmail(request.getEmail())
-    //             .orElseThrow(() ->
-    //                     new InvalidRequestException("Invalid email or password")
-    //             );
-
-    //     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-    //         throw new InvalidRequestException("Invalid email or password");
-    //     }
-
-    //     String token = jwtUtil.generateToken(user.getEmail());
-    //     return new AuthResponse(token);
-    // }
-
     @Override
     public AuthResponse login(LoginRequest request) {
         // Find user first to log their ID even if password fails
@@ -91,22 +75,18 @@ public class UserServiceImpl implements UserService {
             }
 
             if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                // CHANGED: Removed extra null argument
                 auditLogService.log(user, "LOGIN", "FAILURE", null, null);
                 throw new InvalidRequestException("Invalid email or password");
             }
 
-            // CHANGED: Removed extra null argument
             auditLogService.log(user, "LOGIN", "SUCCESS", null, null);
 
             String token = jwtUtil.generateToken(user.getEmail());
             return new AuthResponse(token);
         }
 
-// ... catch block ...
             catch (Exception e) {
             if (user != null && !(e instanceof InvalidRequestException)) {
-                // CHANGED: Removed extra null argument
                 auditLogService.log(user, "LOGIN", "FAILURE", null, null);
             }
             throw e;

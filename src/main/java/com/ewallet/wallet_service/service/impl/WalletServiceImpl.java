@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.ewallet.wallet_service.service.AuditLogService; // Import this
+import com.ewallet.wallet_service.service.AuditLogService; 
 
 @Service
 @Transactional
@@ -29,14 +29,14 @@ public class WalletServiceImpl implements WalletService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final BalanceWebSocketService balanceWebSocketService;
-    private final AuditLogService auditLogService; // 1. Inject Service
+    private final AuditLogService auditLogService; 
 
     public WalletServiceImpl(
             WalletRepository walletRepository,
             TransactionRepository transactionRepository,
             UserRepository userRepository,
             BalanceWebSocketService balanceWebSocketService,
-            AuditLogService auditLogService // 2. Add to constructor
+            AuditLogService auditLogService 
     ) {
         this.walletRepository = walletRepository;
         this.transactionRepository = transactionRepository;
@@ -92,7 +92,6 @@ public class WalletServiceImpl implements WalletService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Target wallet not found")
                 );
-                // Capture state for logging
         BigDecimal senderOldBal = fromWallet.getBalance();
         BigDecimal receiverOldBal = toWallet.getBalance();
 
