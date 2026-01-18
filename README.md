@@ -124,42 +124,37 @@ A **Full-Stack E-Wallet application** implementing **secure digital wallet opera
 
 ## 📂 Project Structure
 
+```text
 ewallet_simulator/
-│
 ├── backend/
-│   ├── src/main/java/com/ewallet/wallet_service
-│   │   ├── controller
-│   │   ├── service
-│   │   ├── repository
-│   │   ├── entity
-│   │   ├── dto
-│   │   ├── websocket
-│   │   ├── security
-│   │   └── exception
-│   ├── src/test
+│   ├── src/main/java/com/ewallet/wallet_service/
+│   │   ├── controller/
+│   │   ├── service/
+│   │   ├── repository/
+│   │   ├── entity/
+│   │   ├── dto/
+│   │   ├── websocket/
+│   │   ├── security/
+│   │   └── exception/
+│   ├── src/test/
 │   ├── application.properties
 │   ├── .env
 │   ├── build.gradle
 │   └── docker-compose.yml
-│
 ├── frontend/
 │   ├── src/
-│   │   ├── pages
-│   │   ├── components
-│   │   ├── auth
-│   │   ├── websocket
-│   │   └── api
+│   │   ├── pages/
+│   │   ├── components/
+│   │   ├── auth/
+│   │   ├── websocket/
+│   │   └── api/
 │   ├── index.css
 │   └── package.json
-│
-└── Screenshots
-│
-└── Video_Walkthrough
-│
+├── Screenshots/
+├── Video_Walkthrough/
 └── README.md
 
 ---
-
 
 ## 🐳 MySQL Setup (Docker)  : 📄 docker-compose.yml
 
