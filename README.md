@@ -153,25 +153,27 @@ ewallet_simulator/
 ├── Screenshots/
 ├── Video_Walkthrough/
 └── README.md
-
+```
 ---
 
 ## 🐳 MySQL Setup (Docker)  : 📄 docker-compose.yml
 
 ### ▶️ Start MySQL
 
+```bash
+docker compose up -d
 
-Command : docker compose up -d
-
+```
 ---
 
 ## 🚀 Running the Application
 
 ### 1️⃣ Backend
 
+```bash
 cd backend
 ./gradlew bootRun or ./gradlew clean built bootrun
-
+```
 * API: [http://localhost:8080]
 * Swagger UI: [http://localhost:8080/swagger-ui.html]
 
@@ -179,11 +181,11 @@ cd backend
 
 ### 2️⃣ Frontend
 
-
+```bash
 cd frontend
 npm install
 npm run dev
-
+```
 
 * App: [http://localhost:5173]
 
@@ -193,13 +195,14 @@ npm run dev
 
 * Run Unit Tests:
 
+```bash
   cd backend
   ./gradlew clean test
-
+```
 * Generate JaCoCo Coverage Report:
-
+```bash
   ./gradlew jacocoTestReport
-
+```
 
 ### 📊 Test Report
 
