@@ -1,6 +1,8 @@
 package com.ewallet.wallet_service.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +16,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     // =============================
     // 404 - RESOURCE NOT FOUND
     // =============================
@@ -22,6 +27,11 @@ public class GlobalExceptionHandler {
             ResourceNotFoundException ex,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Resource not found: path={}, message={}",
+            request.getRequestURI(),
+            ex.getMessage()
+        );
         return buildResponse(ex, HttpStatus.NOT_FOUND, request);
     }
 
@@ -33,6 +43,11 @@ public class GlobalExceptionHandler {
             InvalidRequestException ex,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Invalid request: path={}, message={}",
+            request.getRequestURI(),
+            ex.getMessage()
+        );
         return buildResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 
@@ -44,6 +59,11 @@ public class GlobalExceptionHandler {
             InsufficientBalanceException ex,
             HttpServletRequest request
     ) {
+        log.warn(
+            "Insufficient balance: path={}, message={}",
+            request.getRequestURI(),
+            ex.getMessage()
+        );
         return buildResponse(ex, HttpStatus.BAD_REQUEST, request);
     }
 
@@ -65,6 +85,8 @@ public class GlobalExceptionHandler {
                   )
           );
 
+        log.warn("Validation failed: {}", errors);
+
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errors);
@@ -78,7 +100,16 @@ public class GlobalExceptionHandler {
             Exception ex,
             HttpServletRequest request
     ) {
-        return buildResponse(ex, HttpStatus.INTERNAL_SERVER_ERROR, request);
+        log.error(
+            "Unhandled exception: path={}",
+            request.getRequestURI(),
+            ex
+        );
+        return buildResponse(
+                ex,
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                request
+        );
     }
 
     // =============================

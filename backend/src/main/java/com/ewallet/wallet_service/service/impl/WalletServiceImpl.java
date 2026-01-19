@@ -13,6 +13,8 @@ import com.ewallet.wallet_service.repository.WalletRepository;
 import com.ewallet.wallet_service.service.AuditLogService;
 import com.ewallet.wallet_service.service.BalanceWebSocketService;
 import com.ewallet.wallet_service.service.WalletService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,9 @@ import java.util.List;
 @Service
 @Transactional
 public class WalletServiceImpl implements WalletService {
+
+    private static final Logger log =
+            LoggerFactory.getLogger(WalletServiceImpl.class);
 
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
@@ -49,20 +54,23 @@ public class WalletServiceImpl implements WalletService {
     // HELPER: CURRENT USER WALLET
     // =============================
     private Wallet getCurrentUserWallet() {
+
         String email = SecurityContextHolder
                 .getContext()
                 .getAuthentication()
                 .getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found")
-                );
+                .orElseThrow(() -> {
+                    log.error("Authenticated user not found: {}", email);
+                    return new ResourceNotFoundException("User not found");
+                });
 
         return walletRepository.findByUserId(user.getId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Wallet not found")
-                );
+                .orElseThrow(() -> {
+                    log.error("Wallet not found for userId={}", user.getId());
+                    return new ResourceNotFoundException("Wallet not found");
+                });
     }
 
     // =============================
@@ -70,38 +78,66 @@ public class WalletServiceImpl implements WalletService {
     // =============================
     @Override
     public WalletResponse getMyBalance() {
+
         Wallet wallet = getCurrentUserWallet();
+
+        log.info("Balance fetched for userId={}, balance={}",
+                wallet.getUser().getId(),
+                wallet.getBalance());
+
         return new WalletResponse(wallet.getId(), wallet.getBalance());
     }
 
     // =============================
-    // TRANSFER MONEY
+    // TRANSFER MONEY (ACID)
     // =============================
     @Override
     public void transfer(Long toWalletId, BigDecimal amount) {
 
         Wallet fromWallet = getCurrentUserWallet();
         Wallet toWallet = walletRepository.findById(toWalletId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Target wallet not found")
-                );
+                .orElseThrow(() -> {
+                    log.warn("Transfer failed: target wallet {} not found",
+                            toWalletId);
+                    return new ResourceNotFoundException(
+                            "Target wallet not found");
+                });
 
         BigDecimal senderOldBal = fromWallet.getBalance();
         BigDecimal receiverOldBal = toWallet.getBalance();
 
+        log.info(
+            "Transfer initiated from walletId={} to walletId={}, amount={}",
+            fromWallet.getId(),
+            toWalletId,
+            amount
+        );
+
         try {
             if (fromWallet.getId().equals(toWalletId)) {
-                throw new IllegalArgumentException("Cannot transfer to same wallet");
+                log.warn("Transfer failed: same source and target wallet");
+                throw new IllegalArgumentException(
+                        "Cannot transfer to same wallet");
             }
 
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Transfer amount must be positive");
+                log.warn("Transfer failed: invalid amount {}", amount);
+                throw new IllegalArgumentException(
+                        "Transfer amount must be positive");
             }
 
             if (fromWallet.getBalance().compareTo(amount) < 0) {
-                throw new InsufficientBalanceException("Insufficient balance");
+                log.warn(
+                    "Transfer failed: insufficient balance. walletId={}, balance={}, amount={}",
+                    fromWallet.getId(),
+                    fromWallet.getBalance(),
+                    amount
+                );
+                throw new InsufficientBalanceException(
+                        "Insufficient balance");
             }
 
+            // ACID section
             fromWallet.setBalance(senderOldBal.subtract(amount));
             toWallet.setBalance(receiverOldBal.add(amount));
 
@@ -116,7 +152,7 @@ public class WalletServiceImpl implements WalletService {
 
             transactionRepository.save(tx);
 
-            // ✅ AUDIT LOGS
+            // AUDIT LOGS
             auditLogService.log(
                     fromWallet.getUser(),
                     "TRANSFER",
@@ -133,7 +169,7 @@ public class WalletServiceImpl implements WalletService {
                     toWallet.getBalance()
             );
 
-            // 🔥 REAL-TIME UPDATES
+            // REAL-TIME UPDATES
             balanceWebSocketService.publishBalance(
                     fromWallet.getId(),
                     fromWallet.getBalance()
@@ -144,7 +180,23 @@ public class WalletServiceImpl implements WalletService {
                     toWallet.getBalance()
             );
 
+            log.info(
+                "Transfer successful. fromWallet={}, toWallet={}, amount={}",
+                fromWallet.getId(),
+                toWallet.getId(),
+                amount
+            );
+
         } catch (Exception e) {
+
+            log.error(
+                "Transfer failed. fromWallet={}, toWallet={}, amount={}",
+                fromWallet.getId(),
+                toWalletId,
+                amount,
+                e
+            );
+
             auditLogService.log(
                     fromWallet.getUser(),
                     "TRANSFER",
@@ -152,7 +204,8 @@ public class WalletServiceImpl implements WalletService {
                     senderOldBal,
                     senderOldBal
             );
-            throw e;
+
+            throw e; // rollback
         }
     }
 
@@ -164,6 +217,9 @@ public class WalletServiceImpl implements WalletService {
 
         Wallet wallet = getCurrentUserWallet();
 
+        log.info("Fetching transaction history for walletId={}",
+                wallet.getId());
+
         List<Transaction> transactions =
                 transactionRepository
                         .findByFromWalletIdOrToWalletIdOrderByTimestampDesc(
@@ -171,7 +227,14 @@ public class WalletServiceImpl implements WalletService {
                                 wallet.getId()
                         );
 
+        log.info(
+            "Transaction history fetched for walletId={}, count={}",
+            wallet.getId(),
+            transactions.size()
+        );
+
         return transactions.stream().map(tx -> {
+
             boolean isDebit =
                     tx.getFromWallet().getId().equals(wallet.getId());
 

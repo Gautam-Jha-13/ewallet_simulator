@@ -9,12 +9,14 @@ import com.ewallet.wallet_service.exception.InvalidRequestException;
 import com.ewallet.wallet_service.repository.UserRepository;
 import com.ewallet.wallet_service.repository.WalletRepository;
 import com.ewallet.wallet_service.security.JwtUtil;
+import com.ewallet.wallet_service.service.AuditLogService;
 import com.ewallet.wallet_service.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.ewallet.wallet_service.service.AuditLogService; // Import this
 
 import java.math.BigDecimal;
 
@@ -22,13 +24,17 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private static final BigDecimal MIN_INITIAL_BALANCE = BigDecimal.valueOf(1000);
+    private static final Logger log =
+            LoggerFactory.getLogger(UserServiceImpl.class);
+
+    private static final BigDecimal MIN_INITIAL_BALANCE =
+            BigDecimal.valueOf(1000);
 
     private final UserRepository userRepository;
     private final WalletRepository walletRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final AuditLogService auditLogService; // 1. Inject Service
+    private final AuditLogService auditLogService;
 
     // =============================
     // CREATE USER + WALLET
@@ -37,11 +43,23 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void createUser(UserCreateRequest request) {
 
+        log.info("User registration attempt for email={}", request.getEmail());
+
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            log.warn("Registration failed: Email already exists [{}]",
+                    request.getEmail());
             throw new InvalidRequestException("Email already exists");
         }
 
-        if (request.getInitialBalance().compareTo(MIN_INITIAL_BALANCE) < 0) {
+        if (request.getInitialBalance()
+                .compareTo(MIN_INITIAL_BALANCE) < 0) {
+
+            log.warn(
+                "Registration failed for email={} due to low initial balance: {}",
+                request.getEmail(),
+                request.getInitialBalance()
+            );
+
             throw new InvalidRequestException(
                     "Minimum initial balance must be ₹" + MIN_INITIAL_BALANCE
             );
@@ -59,56 +77,88 @@ public class UserServiceImpl implements UserService {
         wallet.setBalance(request.getInitialBalance());
 
         walletRepository.save(wallet);
+
+        log.info(
+            "User created successfully. userId={}, walletBalance={}",
+            user.getId(),
+            wallet.getBalance()
+        );
     }
 
     // =============================
     // LOGIN
     // =============================
-    // @Override
-    // public AuthResponse login(LoginRequest request) {
-
-    //     User user = userRepository.findByEmail(request.getEmail())
-    //             .orElseThrow(() ->
-    //                     new InvalidRequestException("Invalid email or password")
-    //             );
-
-    //     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-    //         throw new InvalidRequestException("Invalid email or password");
-    //     }
-
-    //     String token = jwtUtil.generateToken(user.getEmail());
-    //     return new AuthResponse(token);
-    // }
-
     @Override
     public AuthResponse login(LoginRequest request) {
-        // Find user first to log their ID even if password fails
-        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+
+        log.info("Login attempt for email={}", request.getEmail());
+
+        User user = userRepository
+                .findByEmail(request.getEmail())
+                .orElse(null);
 
         try {
             if (user == null) {
-                throw new InvalidRequestException("Invalid email or password");
+                log.warn("Login failed: Invalid email [{}]",
+                        request.getEmail());
+                throw new InvalidRequestException(
+                        "Invalid email or password"
+                );
             }
 
-            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-                // CHANGED: Removed extra null argument
-                auditLogService.log(user, "LOGIN", "FAILURE", null, null);
-                throw new InvalidRequestException("Invalid email or password");
+            if (!passwordEncoder.matches(
+                    request.getPassword(),
+                    user.getPassword())) {
+
+                log.warn("Login failed: Wrong password for userId={}",
+                        user.getId());
+
+                auditLogService.log(
+                        user,
+                        "LOGIN",
+                        "FAILURE",
+                        null,
+                        null
+                );
+
+                throw new InvalidRequestException(
+                        "Invalid email or password"
+                );
             }
 
-            // CHANGED: Removed extra null argument
-            auditLogService.log(user, "LOGIN", "SUCCESS", null, null);
+            auditLogService.log(
+                    user,
+                    "LOGIN",
+                    "SUCCESS",
+                    null,
+                    null
+            );
+
+            log.info("Login successful for userId={}", user.getId());
 
             String token = jwtUtil.generateToken(user.getEmail());
             return new AuthResponse(token);
-        }
 
-// ... catch block ...
-            catch (Exception e) {
-            if (user != null && !(e instanceof InvalidRequestException)) {
-                // CHANGED: Removed extra null argument
-                auditLogService.log(user, "LOGIN", "FAILURE", null, null);
+        } catch (Exception e) {
+
+            if (user != null &&
+                !(e instanceof InvalidRequestException)) {
+
+                log.error(
+                    "Unexpected login error for userId={}",
+                    user.getId(),
+                    e
+                );
+
+                auditLogService.log(
+                        user,
+                        "LOGIN",
+                        "FAILURE",
+                        null,
+                        null
+                );
             }
+
             throw e;
         }
     }

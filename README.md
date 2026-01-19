@@ -70,14 +70,13 @@ A **Full-Stack E-Wallet application** implementing **secure digital wallet opera
 
 ---
 
-### 🧪 Robust Testing
-
-* JUnit tests for:
-
+### 🧪 Robust Testing & Quality Assurance
+* **Unit Testing with Mockito**: Dependencies are mocked to test service logic in isolation, ensuring fast and reliable test execution.
+* **Code Coverage with JaCoCo**: Integrated JaCoCo to track and maintain high testing standards.
+* Comprehensive test cases for:
   * Context loading
-  * Transaction safety
-  * Validation
-* ACID properties verified through manual + automated testing
+  * Transaction safety & ACID properties
+  * Validation & Exception handling
 
 ---
 
@@ -103,7 +102,8 @@ A **Full-Stack E-Wallet application** implementing **secure digital wallet opera
 * MySQL (Dockerized)
 * WebSockets
 * Lombok
-* JUnit 5
+* JUnit 5 & Mockito (Testing & Mocking)
+* JaCoCo (Code Coverage Tooling)
 
 ### Frontend
 
@@ -153,25 +153,27 @@ ewallet_simulator/
 ├── Screenshots/
 ├── Video_Walkthrough/
 └── README.md
-
+```
 ---
 
 ## 🐳 MySQL Setup (Docker)  : 📄 docker-compose.yml
 
 ### ▶️ Start MySQL
 
+```bash
+docker compose up -d
 
-Command : docker compose up -d
-
+```
 ---
 
 ## 🚀 Running the Application
 
 ### 1️⃣ Backend
 
+```bash
 cd backend
 ./gradlew bootRun or ./gradlew clean built bootrun
-
+```
 * API: [http://localhost:8080]
 * Swagger UI: [http://localhost:8080/swagger-ui.html]
 
@@ -179,28 +181,36 @@ cd backend
 
 ### 2️⃣ Frontend
 
-
+```bash
 cd frontend
 npm install
 npm run dev
-
+```
 
 * App: [http://localhost:5173]
 
 ---
 
-## 🧪 Running Tests
+## 🧪 Testing & Quality Reports
 
+* Run Unit Tests:
 
-cd backend
-./gradlew test
-
+```bash
+  cd backend
+  ./gradlew clean test
+```
+* Generate JaCoCo Coverage Report:
+```bash
+  ./gradlew jacocoTestReport
+```
 
 ### 📊 Test Report
 
-Open in browser:
+* View Reports in Browser:
 
-backend/build/reports/tests/test/index.html
+  * Test Summary: backend/build/reports/tests/test/index.html
+
+  * Coverage Detail: backend/build/reports/jacoco/test/html/index.html
 
 
 ---
