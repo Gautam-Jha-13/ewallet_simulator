@@ -124,23 +124,21 @@ A **Full-Stack E-Wallet application** implementing **secure digital wallet opera
 
 ## 📂 Project Structure
 
+```text
 ewallet_simulator/
 ├── backend/
-│   ├── src/main/java/com/ewallet/wallet_service/
-│   │   ├── controller/
-│   │   ├── service/
-│   │   ├── repository/
-│   │   ├── entity/
-│   │   ├── dto/
-│   │   ├── websocket/
-│   │   ├── security/
-│   │   └── exception/
-│   ├── src/test/java/com/ewallet/wallet_service/
-│   │   ├── controller/
-│   │   ├── service/
-│   │   ├── security/
-│   │   ├── websocket/
-│   │   └── config/
+│   ├── src/
+│   │   ├── main/java/com/ewallet/wallet_service/
+│   │   │   ├── controller/
+│   │   │   ├── service/
+│   │   │   │   └── impl/
+│   │   │   ├── repository/
+│   │   │   ├── entity/
+│   │   │   ├── dto/
+│   │   │   ├── websocket/
+│   │   │   ├── security/
+│   │   │   └── exception/
+│   │   └── test/java/com/ewallet/wallet_service/
 │   ├── Dockerfile
 │   ├── build.gradle
 │   └── application.properties
@@ -156,12 +154,10 @@ ewallet_simulator/
 │   └── package.json
 │
 ├── Screenshots/
-│   ├── Terminal Outputs/
-│   └── UI Screens/
-│
 ├── docker-compose.yml
-├── README.md
-└── video_overview.mp4
+├── video_overview.mp4
+└── README.md
+
 
 ---
 
