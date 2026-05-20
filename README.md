@@ -157,7 +157,7 @@ ewallet_simulator/
 ├── docker-compose.yml
 ├── video_overview.mp4
 └── README.md
-
+```
 
 ---
 
